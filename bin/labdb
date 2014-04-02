@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+require 'labdb_manager'
+
+if __FILE__ == $0 then
+  run_task ARGV[0], args: ARGV[1..-1]
+end
