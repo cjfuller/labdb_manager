@@ -8,7 +8,7 @@ Command line utility scripts for helping to manage a labdb installation.  Intend
 
 ## Usage
 
-The gem will install a binary `labdb` that takes command line options for various management tasks.  Prefix any command with a --dry-run to show the commands that would be run but not actually run them.
+The gem will install a binary `labdb` that takes command line options for various management tasks.  Prefix most commands with a --dry-run to show the commands that would be run but not actually run them.  This does not work for hostname or secret.
 
 Usage: `labdb [--dry-run] <command>`
 

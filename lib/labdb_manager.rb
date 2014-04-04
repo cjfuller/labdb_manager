@@ -48,9 +48,9 @@ def confirm(cmd)
   #
   # If confirmation is not given, exit the program immediately without running
   # the command.
-  puts (CONFIRM_PREFIX + cmd).yellow
+  print (cmd + " (y/N) " + CONFIRM_PREFIX ).yellow
   response = gets
-  unless ['yes', 'y'].include? response.downcase then
+  unless ['yes', 'y'].include? response.downcase.strip then
     exit 0
   end
   cmd
@@ -204,7 +204,7 @@ def set_hostname(hostname: nil)
     puts ("Please enter the full hostname of the machine.\n" +
       '(i.e. the part that would appear including the https:// ' +
       'in a url but before any other slashes):').yellow
-    CONFIRM_PREFIX.yellow
+    print CONFIRM_PREFIX.yellow
     hostname = gets
     File.open(HOSTNAME_CFG_FILE, 'w') do |f|
       f.write hostname
@@ -251,7 +251,7 @@ def backup
 end
 
 def force_update_deps
-  queue_command bundle_update
+  queue_command {bundle_update}
 end
 
 def secret
