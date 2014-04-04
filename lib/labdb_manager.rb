@@ -62,9 +62,9 @@ def queue_command(**kwargs, &bl)
   SHELL_COMMAND_LIST << ShellCommand.new(bl, **kwargs)
 end
 
-def run_queued_commands
+def run_queued_commands(dry_run: false)
   SHELL_COMMAND_LIST.each do |c|
-    c.call
+    c.call(dry_run: dry_run)
   end
   SHELL_COMMAND_LIST.clear
 end
@@ -83,14 +83,17 @@ class ShellCommand
     @args = args
   end
 
-  def call
+  def call(dry_run: false)
     # Run the command.
     command_string = @cmd_fct.call *@args
-    `#{ShellCommand.prepend_login_shell command_string}`
-    if $?.exitstatus > 0 and @exit_on_fail
-      puts ("Encountered an unresolvable error while running #{command_string}.  " +
-        "Please resolve the problem manually and re-run").red
-      exit($?.exitstatus)
+    puts (COMMAND_PREFIX + command_string).green
+    unless dry_run then
+      `#{ShellCommand.prepend_login_shell command_string}`
+      if $?.exitstatus > 0 and @exit_on_fail
+        puts ("Encountered an unresolvable error while running #{command_string}.  " +
+              "Please resolve the problem manually and re-run").red
+        exit($?.exitstatus)
+      end
     end
     $?.exitstatus
   end
@@ -198,9 +201,10 @@ end
 
 def set_hostname(hostname: nil)
   if hostname.nil?
-    puts 'Please enter the full hostname of the machine.\n' +
+    puts ("Please enter the full hostname of the machine.\n" +
       '(i.e. the part that would appear including the https:// ' +
-      'in a url but before any other slashes):'
+      'in a url but before any other slashes):').yellow
+    CONFIRM_PREFIX.yellow
     hostname = gets
     File.open(HOSTNAME_CFG_FILE, 'w') do |f|
       f.write hostname
@@ -210,10 +214,13 @@ end
 
 def generate_application_secret
   secret = SecureRandom.hex(64) # 512 bits
+  puts (COMMAND_PREFIX +
+        "Writing application secret to #{SECRET_CFG_FILE}").green
   File.open(SECRET_CFG_FILE, 'w') do |f|
     f.write secret
   end
   File.chmod(0600, SECRET_CFG_FILE)
+  ok
 end
 
 # task helpers
@@ -226,13 +233,14 @@ end
 
 def update
   queue_command {create_backup}
-  if ShellCommand.new(&:check_for_staging_branch).call == 0 then
+  if ShellCommand.new(
+      Proc.new {check_for_staging_branch}, exit_on_fail: false).call == 0 then
     queue_command {clean_up_staging_branch}
   end
   queue_command {create_staging_branch}
   queue_command {fetch_remote_changes}
   queue_command {stage_changes}
-  queue_command {update_deps_conservative}
+  queue_command {bundle_install}
   queue_command {precompile_assets}
   queue_command {merge_into_production}
   queue_command {restart_server}
@@ -247,11 +255,11 @@ def force_update_deps
 end
 
 def secret
-  generate_applicaation_secret
+  generate_application_secret
 end
 
 def hostname(hostname: nil)
-  set_hostname(hostname)
+  set_hostname(hostname: hostname)
 end
 
 def install
@@ -273,8 +281,8 @@ end
 def help
 end
 
-def run_task(t, args: [])
+def run_task(t, args: [], dry_run: false)
   send t, *args
-  run_queued_commands
+  run_queued_commands dry_run: dry_run
   ok
 end

@@ -2,5 +2,10 @@
 require 'labdb_manager'
 
 if __FILE__ == $0 then
-  run_task ARGV[0], args: ARGV[1..-1]
+  first_arg = ARGV.shift
+  if first_arg == "--dry-run" then
+    run_task ARGV[0], args: ARGV[1..-1], dry_run: true
+  else
+    run_task first_arg, args: ARGV
+  end
 end
